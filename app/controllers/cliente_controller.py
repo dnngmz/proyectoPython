@@ -2,6 +2,8 @@ from flask import Blueprint, request
 from app.services.cliente_service import ClienteService
 from app.controllers.base_controller import BaseController
 from app.utils.auth_decorators import token_required
+from flask import jsonify
+#from app.utils.jwt_utils import generate_token  # Asegúrate de tener esta utilidad o similar
 
 cliente_bp = Blueprint('clientes', __name__)
 cliente_service = ClienteService()
@@ -14,7 +16,7 @@ class ClienteController(BaseController):
 
     @staticmethod
     @cliente_bp.route('', methods=['GET'])
-    @token_required
+    #@token_required
     def get_all():
         """Obtener todos los clientes (requiere token válido)"""
         try:
@@ -28,7 +30,7 @@ class ClienteController(BaseController):
 
     @staticmethod
     @cliente_bp.route('/<int:cliente_id>', methods=['GET'])
-    @token_required
+    #@token_required
     def get_by_id(cliente_id):
         """Obtener cliente por ID"""
         try:
@@ -72,7 +74,7 @@ class ClienteController(BaseController):
 
     @staticmethod
     @cliente_bp.route('/<int:cliente_id>', methods=['PUT'])
-    @token_required
+    #@token_required
     def update(cliente_id):
         """Actualizar datos de un cliente"""
         try:
@@ -95,7 +97,7 @@ class ClienteController(BaseController):
 
     @staticmethod
     @cliente_bp.route('/<int:cliente_id>', methods=['DELETE'])
-    @token_required
+    #@token_required
     def delete(cliente_id):
         """Eliminar cliente por ID"""
         try:
@@ -109,4 +111,32 @@ class ClienteController(BaseController):
         except Exception as e:
             return ClienteController.error_response(f'Error al eliminar cliente: {str(e)}', 500)
 
+
+    @staticmethod
+    @cliente_bp.route('/login', methods=['POST'])
+    def login():
+        """Iniciar sesión sin token por ahora"""
+        try:
+            data = request.get_json()
+            if not data:
+                return ClienteController.error_response('Datos JSON requeridos', 400)
+
+            email = data.get('email', '').strip().lower()
+            password = data.get('password', '').strip()
+
+            if not email or not password:
+                return ClienteController.error_response('Email y contraseña son requeridos', 400)
+
+            cliente = ClienteService.get_by_email(email)
+
+            if not cliente or cliente.password != password:
+                return ClienteController.error_response('Credenciales inválidas', 401)
+
+            return ClienteController.success_response(
+                data=cliente.to_dict(),
+                message='Login exitoso'
+            )
+        except Exception as e:
+            return ClienteController.error_response(f'Error al iniciar sesión: {str(e)}', 500)
+            
 cliente_controller = ClienteController()
